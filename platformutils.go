@@ -25,17 +25,17 @@ type installConfig struct {
 	} `json:"platform"`
 }
 
-// PlatformClient is a kubernetes client that is capable of retrieving the items
-// necessary to determine the platform status
-type PlatformClient struct {
+// InfrastructureClient is a kubernetes client that is capable of retrieving the
+// items necessary to determine the infrastrcture and platform status
+type InfrastructureClient struct {
 	Client  client.Client
 	Context context.Context
 }
 
-// NewClient provides a new PlatformClient
-func NewClient(ctx context.Context) (PlatformClient, error) {
+// NewClient provides a new InfrastructureClient
+func NewClient(ctx context.Context) (*InfrastructureClient, error) {
 	var err error
-	c := PlatformClient{
+	c := InfrastructureClient{
 		Context: ctx,
 	}
 	scheme := runtime.NewScheme()
@@ -43,34 +43,41 @@ func NewClient(ctx context.Context) (PlatformClient, error) {
 	// Set up platform status client
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return c, err
+		return nil, err
 	}
 
 	// Add OpenShift config apis to scheme
 	if err := configv1.Install(scheme); err != nil {
-		return c, err
+		return nil, err
 	}
 
 	// Add Core apis to scheme
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return c, err
+		return nil, err
 	}
 
 	// Create client
 	c.Client, err = client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
-		return c, err
+		return nil, err
 	}
-	return c, nil
+	return &c, nil
 }
 
-// GetInfrastructureStatus fetches the InfrastructureStatus for the cluster
-func (c *PlatformClient) GetInfrastructureStatus() (*configv1.InfrastructureStatus, error) {
+// GetInfrastructureStatus fetches the InfrastructureStatus for the cluster. It
+// uses GetPlatformStatus to return a well-formed PlatformStatus, even if the CR
+// is missing this data.
+func (c *InfrastructureClient) GetInfrastructureStatus() (*configv1.InfrastructureStatus, error) {
 	var err error
 
 	// Retrieve the cluster infrastructure config.
 	infra := &configv1.Infrastructure{}
 	err = c.Client.Get(c.Context, types.NamespacedName{Name: "cluster"}, infra)
+	if err != nil {
+		return nil, err
+	}
+
+	infra.Status.PlatformStatus, err = c.GetPlatformStatus(&infra.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +91,7 @@ func (c *PlatformClient) GetInfrastructureStatus() (*configv1.InfrastructureStat
 // version 4.2 on AWS expose the region config only through the install-config.
 // Non-AWS clusters and all installed on 4.2 or later expose this information
 // via the infrastructure custom resource.
-func (c *PlatformClient) GetPlatformStatus(infraStatus *configv1.InfrastructureStatus) (*configv1.PlatformStatus, error) {
+func (c *InfrastructureClient) GetPlatformStatus(infraStatus *configv1.InfrastructureStatus) (*configv1.PlatformStatus, error) {
 	if status := infraStatus.PlatformStatus; status != nil {
 		// Only AWS needs backwards compatibility with install-config
 		if status.Type != configv1.AWSPlatformType {

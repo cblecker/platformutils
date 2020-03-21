@@ -79,7 +79,7 @@ func TestGetPlatformStatus(t *testing.T) {
 			t.Fatalf("error in test case; infrastructure object required for non-AWS platform")
 		}
 
-		fc := &PlatformClient{
+		fc := &InfrastructureClient{
 			Context: context.TODO(),
 			Client:  client.NewFakeClientWithScheme(scheme),
 		}
@@ -125,13 +125,8 @@ func TestGetPlatformStatus(t *testing.T) {
 			t.Fatalf("unable to get fake infrastructureStatus object: %v", err)
 		}
 
-		// Run test and compare
-		ps, err := fc.GetPlatformStatus(infraStatus)
-		if err != nil {
-			t.Errorf("error on retrieving platform status: %v", err)
-		}
-		if ps.AWS.Region != tc.region {
-			t.Errorf("expecting region %s, got %s", tc.region, ps.AWS.Region)
+		if infraStatus.PlatformStatus.AWS.Region != tc.region {
+			t.Errorf("expecting region %s, got %s", tc.region, infraStatus.PlatformStatus.AWS.Region)
 		}
 	}
 }
