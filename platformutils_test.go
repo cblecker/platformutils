@@ -79,7 +79,10 @@ func TestGetPlatformStatus(t *testing.T) {
 			t.Fatalf("error in test case; infrastructure object required for non-AWS platform")
 		}
 
-		fc := client.NewFakeClientWithScheme(scheme)
+		fc := &PlatformClient{
+			Context: context.TODO(),
+			Client:  client.NewFakeClientWithScheme(scheme),
+		}
 
 		// create infrastructure object
 		infraObj := infraObjBase
@@ -95,7 +98,7 @@ func TestGetPlatformStatus(t *testing.T) {
 			//nolint:staticcheck // ref https://github.com/golangci/golangci-lint/issues/741
 			infraObj.Status.Platform = configv1.PlatformType(tc.platform)
 		}
-		err = fc.Create(context.TODO(), &infraObj)
+		err = fc.Client.Create(context.TODO(), &infraObj)
 		if err != nil {
 			t.Fatalf("unable to create fake infratructure object: %v", err)
 		}
@@ -112,18 +115,18 @@ func TestGetPlatformStatus(t *testing.T) {
 			clusterConfig.Data = make(map[string]string)
 		}
 		clusterConfig.Data["install-config"] = string(icYaml)
-		err = fc.Create(context.TODO(), &clusterConfig)
+		err = fc.Client.Create(context.TODO(), &clusterConfig)
 		if err != nil {
 			t.Fatalf("unable to create fake configmap object: %v", err)
 		}
 
-		infraStatus, err := GetInfrastructureStatus(fc)
+		infraStatus, err := fc.GetInfrastructureStatus()
 		if err != nil {
 			t.Fatalf("unable to get fake infrastructureStatus object: %v", err)
 		}
 
 		// Run test and compare
-		ps, err := GetPlatformStatus(fc, infraStatus)
+		ps, err := fc.GetPlatformStatus(infraStatus)
 		if err != nil {
 			t.Errorf("error on retrieving platform status: %v", err)
 		}
