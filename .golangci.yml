@@ -1,0 +1,9 @@
+run:
+  deadline: 10m
+  modules-download-mode: readonly
+linters:
+  disable:
+    - depguard
+    - gochecknoglobals
+    - gochecknoinits
+    - lll
