@@ -81,7 +81,7 @@ func TestGetPlatformStatus(t *testing.T) {
 
 		fc := &InfrastructureClient{
 			Context: context.TODO(),
-			Client:  client.NewFakeClientWithScheme(scheme),
+			Client:  client.NewClientBuilder().WithScheme(scheme).Build(),
 		}
 
 		// create infrastructure object
