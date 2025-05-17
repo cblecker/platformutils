@@ -8,59 +8,70 @@ on:
     branches:
     - main
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-
     - name: Check out code
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v4
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
+    - name: Setup dependency cache
+      uses: actions/cache@v4
       with:
-        go-version-file: go.mod
-
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Ensure dependencies are downloaded
+      run: go mod download
     - name: Build
       run: go build -v ./...
-
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-
     - name: Check out code
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v4
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
+    - name: Setup dependency cache
+      uses: actions/cache@v4
       with:
-        go-version-file: go.mod
-
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Ensure dependencies are downloaded
+      run: go mod download
     - name: Test
       run: go test ./...
-
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
     needs: build
     steps:
-
     - name: Check out code
-      uses: actions/checkout@v3
-
+      uses: actions/checkout@v4
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
+    - name: Setup dependency cache
+      uses: actions/cache@v4
       with:
-        go-version-file: go.mod
-
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Ensure dependencies are downloaded
+      run: go mod download
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3
-      with:
-        version: v1.54
+      uses: golangci/golangci-lint-action@v8
